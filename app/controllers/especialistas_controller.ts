@@ -50,7 +50,7 @@ export default class EspecialistasController {
   async update({ params, request, response }: HttpContext) {
     const especialista = await Especialista.findOrFail(params.id)
 
-    if (especialista.deletedAt) {
+    if (especialista.deleted_at) {
       return response.notFound({ message: 'Especialista eliminado' })
     }
 
@@ -67,7 +67,7 @@ export default class EspecialistasController {
   async destroy({ params, response }: HttpContext) {
     const especialista = await Especialista.findOrFail(params.id)
 
-    especialista.deletedAt = DateTime.now()
+    especialista.deleted_at = DateTime.now()
     await especialista.save()
 
     return response.ok({ message: 'Especialista eliminado correctamente' })

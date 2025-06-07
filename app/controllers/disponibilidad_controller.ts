@@ -2,6 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import Disponibilidad from '#models/disponibilidad'
 import { DateTime } from 'luxon'
 import { disponibilidadValidator, partialDisponibilidadValidator } from '#validators/disponibilidad'
+import validator from 'validator'
 
 export default class DisponibilidadController {
   async index({ response }: HttpContext) {
@@ -13,7 +14,7 @@ export default class DisponibilidadController {
   }
 
   async store({ request, response }: HttpContext) {
-    const data = await Validator.validate({
+    const data = await validator.validate({
       schema: disponibilidadValidator,
       data: request.body(),
     })
@@ -43,7 +44,7 @@ export default class DisponibilidadController {
   async update({ params, request, response }: HttpContext) {
     const disponibilidad = await Disponibilidad.findOrFail(params.id)
 
-    if (disponibilidad.deletedAt) {
+    if (disponibilidad.deleted_at) {
       return response.notFound({ message: 'Disponibilidad eliminada' })
     }
 
@@ -65,7 +66,7 @@ export default class DisponibilidadController {
   async destroy({ params, response }: HttpContext) {
     const disponibilidad = await Disponibilidad.findOrFail(params.id)
 
-    disponibilidad.deletedAt = DateTime.now()
+    disponibilidad.deleted_at = DateTime.now()
     await disponibilidad.save()
 
     return response.ok({ message: 'Disponibilidad eliminada (soft delete)' })
