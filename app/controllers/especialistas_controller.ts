@@ -4,24 +4,23 @@ import { DateTime } from 'luxon'
 import { especialistaValidator, partialEspecialistaValidator } from '#validators/especialista'
 
 export default class EspecialistasController {
+  // Obtener todos los especialistas activos e inactivos (según deleted_at)
   async index({ response }: HttpContext) {
-    const especialistas = await Especialista.query()
-      .whereNull('deleted_at')
-      .preload('disponibilidades')
-
+    const especialistas = await Especialista.query().preload('disponibilidades')
     return response.ok(especialistas)
   }
 
+  // Crear un nuevo especialista con disponibilidades
   async store({ request, response }: HttpContext) {
     const data = await request.validateUsing(especialistaValidator)
 
-    const especialista = await Especialista.create(data)
+    const especialista = await Especialista.create({ ...data, activo: true })
 
     if (data.disponibilidades) {
       await especialista.related('disponibilidades').createMany(
-        data.disponibilidades.map((disponibilidad) => ({
-          ...disponibilidad,
-          dia: disponibilidad.dia as
+        data.disponibilidades.map((d) => ({
+          ...d,
+          dia: d.dia as
             | 'Lunes'
             | 'Martes'
             | 'Miércoles'
@@ -37,22 +36,19 @@ export default class EspecialistasController {
     return response.created(especialista)
   }
 
+  // Obtener un especialista por ID (solo si no está eliminado)
   async show({ params, response }: HttpContext) {
     const especialista = await Especialista.query()
       .where('id', params.id)
-      .whereNull('deleted_at')
       .preload('disponibilidades')
       .firstOrFail()
 
     return response.ok(especialista)
   }
 
+  // Actualizar un especialista
   async update({ params, request, response }: HttpContext) {
     const especialista = await Especialista.findOrFail(params.id)
-
-    if (especialista.deleted_at) {
-      return response.notFound({ message: 'Especialista eliminado' })
-    }
 
     const data = await request.validateUsing(partialEspecialistaValidator, {
       meta: { id: especialista.id },
@@ -61,15 +57,26 @@ export default class EspecialistasController {
     especialista.merge(data)
     await especialista.save()
 
+    await especialista.load('disponibilidades')
     return response.ok(especialista)
   }
 
+  // Soft delete (marcar como eliminado e inactivo)
   async destroy({ params, response }: HttpContext) {
     const especialista = await Especialista.findOrFail(params.id)
 
     especialista.deleted_at = DateTime.now()
+    especialista.activo = false
     await especialista.save()
 
-    return response.ok({ message: 'Especialista eliminado correctamente' })
+    return response.ok({ message: 'Especialista marcado como inactivo' })
+  }
+
+  // Eliminación permanente (solo desde frontend, bajo confirmación)
+  async forceDelete({ params, response }: HttpContext) {
+    const especialista = await Especialista.findOrFail(params.id)
+
+    await especialista.delete() // elimina de la base de datos
+    return response.ok({ message: 'Especialista eliminado permanentemente' })
   }
 }

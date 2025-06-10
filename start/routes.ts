@@ -38,6 +38,7 @@ router
     router.put('/:id', [EspecialistasController, 'update'])
     router.patch('/:id', [EspecialistasController, 'update'])
     router.delete('/:id', [EspecialistasController, 'destroy'])
+    router.delete('/especialistas/:id/force', 'EspecialistasController.forceDelete')
   })
   .prefix('/especialistas')
 middleware.auth({
