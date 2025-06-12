@@ -36,7 +36,7 @@ export const partialEspecialistaValidator = vine.compile(
         const row = await db
           .from('especialistas')
           .where('registro_profesional', value)
-          .whereNot('id', context.parent.id)
+          .whereNot('id', context.meta.id) // Usamos el ID desde meta
           .first()
         return !row
       })
